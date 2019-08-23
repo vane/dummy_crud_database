@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 import math
 import os
-import psutil
+try:
+    import psutil
+except:
+    pass
 
 def convert_size(size_bytes, index=0):
     if size_bytes == 0:
@@ -15,5 +18,8 @@ def convert_size(size_bytes, index=0):
     return "%s %s" % (s, size_name[index])
 
 def get_size():
-    process = psutil.Process(os.getpid())
-    return convert_size(process.memory_info().rss, 2)
+    try:
+        process = psutil.Process(os.getpid())
+        return convert_size(process.memory_info().rss, 2)
+    except:
+        return 0

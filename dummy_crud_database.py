@@ -33,6 +33,7 @@ class BaseFile:
             pathlib.Path(self.path).touch()
         self.access = access
         self.dbfile = None
+        self.size = 0
 
     def __enter__(self):
         self.open()
@@ -43,15 +44,13 @@ class BaseFile:
 
     def open(self):
         self.dbfile = open(self.path, self.access)
-        if self.fsize() == 0:
+        self.size = os.path.getsize(self.path)
+        if self.size == 0:
             Logger.info('write initial data')
             self.dbfile.write(self._write_int(0))
             self.dbfile.seek(0)
+            self.size += INT_SIZE
             self.dbfile.flush()
-
-    def fsize(self):
-        s = os.path.getsize(self.path)
-        return s
 
     def _write_int(self, i):
         return struct.pack('<I', i)
@@ -70,21 +69,21 @@ class IndexFile(BaseFile):
 
     def write(self, i, position):
         self.idx[i] = position
-        self.dbfile.seek(self.fsize())
+        self.dbfile.seek(self.size)
         self.dbfile.write(self._write_int(i))
         self.dbfile.write(self._write_int(position))
+        self.size += INT_SIZE*2
         self.dbfile.flush()
 
     def read_index(self):
         self.BaseFile = {}
         index = INT_SIZE
-        end = self.fsize()
+        end = self.size
         while index < end:
             i = self._read_int(self.dbfile.read(INT_SIZE))
             position = self._read_int(self.dbfile.read(INT_SIZE))
             index += INT_SIZE*2
             self.idx[i] = position
-
 
 class CrudIndexFile():
 
@@ -104,7 +103,7 @@ class CrudIndexFile():
 
     def write(self, data):
         data, size = self._get_data(data)
-        end = self.base.fsize()
+        end = self.base.size
         # calculate new number of elements
         index = self._read_size()+1
         # go to end
@@ -115,11 +114,12 @@ class CrudIndexFile():
         # increase number of elements
         self._write_size(size=index)
         self.idxdata.write(i=index, position=end)
+        self.base.size += HEADER_SIZE + size
         self.base.dbfile.flush()
 
     def readall(self):
         position = INT_SIZE
-        end = self.fsize()
+        end = self.base.size
         output = []
         while position < end:
             self.base.dbfile.seek(position)
@@ -142,7 +142,7 @@ class CrudIndexFile():
         position = self.base.dbfile.tell()
         # got ot header and override with status updated and set skip to end of file
         self.base.dbfile.seek(position-HEADER_SIZE)
-        end = self.base.fsize()
+        end = self.base.size
         self._write_header(size=size, index=idx, status=STATUS_UPDATED, skip=end)
         # read old value
         old = self.base.dbfile.read(size).decode('utf-8')
@@ -152,6 +152,7 @@ class CrudIndexFile():
         data, size = self._get_data(data)
         self._write_header(size=size, index=idx, status=STATUS_OK, skip=0)
         self.base.dbfile.write(data)
+        self.base.size += HEADER_SIZE + size
         self.base.dbfile.flush()
         return old
 
@@ -175,7 +176,7 @@ class CrudIndexFile():
 
     def seek_data(self, index):
         position = self.idxdata.idx.get(index)
-        end = self.base.fsize()
+        end = self.base.size
         while position < end:
             self.base.dbfile.seek(position)
             status, idx, skip, size = self._read_header()
@@ -223,24 +224,34 @@ if __name__ == '__main__':
     if os.path.exists(idxpath):
         os.remove(idxpath)
     rstring = lambda size: ''.join(random.choice(string.ascii_letters) for i in range(size))
-    a = time.time()
-    write_elements = 100000
-    read_elements = 100000
+    test_size = 1000000
+    Logger.info('Test elements size {}'.format(test_size))
     with CrudIndexFile() as crud:
-        for i in range(write_elements+1):
-            crud.write(rstring(random.randrange(100, 1000)))
+        test_data = []
+        for i in range(0, 1001):
+            test_data.append(rstring(random.randrange(100, 1000)))
+        test_data_len = len(test_data)
+        a = time.time()
+        for i in range(test_size+1):
+            crud.write(random.choice(test_data))
+            if i % 10000 == 0:
+                Logger.info('write {}'.format(i))
         size = crud.size()
-        print("write elements {} in {}".format(write_elements, time.time() - a))
+        t = time.time() - a
+        print("write elements in {}s - {} per second".format(t, test_size/t))
         b = time.time()
-        for i in range(0, read_elements+1):
+        for i in range(0, test_size+1):
             crud.read(random.randrange(1, size))
-        print("read elements {} in {}".format(read_elements, time.time() - b))
-        Logger.info('read index 2 : ', crud.read(index=2))
-        Logger.info('remove index 3 : ', crud.delete(index=3))
-        Logger.info('update index 2 : ', crud.update(index=2, data=rstring(85)))
-        Logger.info('read index {} : '.format(size), crud.read(index=size))
+            if i % 10000 == 0:
+                Logger.info('read {}'.format(i))
+        t = time.time() - b
+        print("read elements in {}s - {} per second".format(t, test_size/t))
+        crud.read(index=2)
+        crud.delete(index=3)
+        crud.update(index=2, data=rstring(85))
+        crud.read(index=size)
         Logger.info('size : ', crud.size())
-        Logger.info('database fsize : ', process_size.convert_size(crud.base.fsize(), 2))
-        Logger.info('index fsize : ', process_size.convert_size(crud.idxdata.fsize(), 2))
+        Logger.info('database fsize : ', process_size.convert_size(crud.base.size, 2))
+        Logger.info('index fsize : ', process_size.convert_size(crud.idxdata.size, 2))
         Logger.info('pid : ', process_size.get_size())
     Logger.info('total : {}'.format(time.time() - a))

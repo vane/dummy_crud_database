@@ -20,7 +20,7 @@ For simplicity data and index files is append only.
 Index file is loaded and stored as dictionary in memory on start.
 
 #### Dependencies
-Depends on psutil to display pid statistics when running main file.
+Optional psutil to display pid statistics when running main file.
 
 #### Run
 
@@ -29,8 +29,8 @@ I tested it using python3.7 but it can be easily converted to any python version
 By default it :
 - removes 2 files test.db, test.index if those files exists
 - create 2 files test.db, test.index  
-- writes and index 100k random string with characters between (100, 1000) to test.db file
-- reads 100k random elements from file
+- writes and index 1 million random string with characters between (100, 1000) to test.db file (around 540MB)
+- reads 1 million random elements from file (around 8MB)
 - performs read of object at position 2
 - remove object from position 3
 - update object at position 2
@@ -41,12 +41,13 @@ python dummy_crud_database.py
 
 #### Output
 ```bash
-write elements 100000 in 70.1026759147644
-read elements 100000 in 3.7399983406066895
-size :  100000
-database fsize :  53.91 MB
-index fsize :  0.76 MB
-pid memory usage :  25.61 MB
+Test elements size 1000000
+write elements in 35.61809206008911s - 28075.61950013945 per second
+read elements in 13.677339792251587s - 73113.63285472477 per second
+size :  1000000
+database fsize :  539.06 MB
+index fsize :  7.63 MB
 ```
 
-So it looks like it can do 1,4k inserts per second and around 26k reads per second on my computer (write time is including generation of random data).
+
+So it looks like it can do 1,4k inserts per second and around 26k reads per second on my computer (write time including random choice from 1k elements array).
