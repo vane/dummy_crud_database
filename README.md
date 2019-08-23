@@ -17,23 +17,23 @@ Supports
 - read all data
 
 For simplicity data and index files is append only.  
-Index file is loaded and stored as dictionary in memory on start.
+Index file is loaded and stored as dictionary in memory at start.
 
 #### Dependencies
-Optional psutil to display pid statistics when running main file.
+Optional psutil to display pid statistics after running perf test.
 
 #### Run
 
-I tested it using python3.7 but it can be easily converted to any python version or any language  
+I tested it using python3.7
 
-By default it :
+Test run by default:
 - removes 2 files test.db, test.index if those files exists
 - create 2 files test.db, test.index  
-- writes and index 1 million random string with characters between (100, 1000) to test.db file
-- reads 1 million random elements from file
-- performs read of object at position 2
-- remove object from position 3
-- update object at position 2
+- write and index 1 million random string between (100, 1000) characters to test.db file
+- read 1 million random elements from file
+- remove object
+- update object
+- read one object
 
 ```python
 python dummy_crud_database.py 
