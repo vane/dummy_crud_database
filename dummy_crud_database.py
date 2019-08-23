@@ -246,7 +246,6 @@ if __name__ == '__main__':
                 Logger.info('read {}'.format(i))
         t = time.time() - b
         print("read elements in {}s - {} per second".format(t, test_size/t))
-        crud.read(index=2)
         crud.delete(index=3)
         crud.update(index=2, data=rstring(85))
         crud.read(index=size)
