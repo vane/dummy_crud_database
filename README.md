@@ -29,8 +29,8 @@ I tested it using python3.7 but it can be easily converted to any python version
 By default it :
 - removes 2 files test.db, test.index if those files exists
 - create 2 files test.db, test.index  
-- writes and index 1 million random string with characters between (100, 1000) to test.db file (around 540MB)
-- reads 1 million random elements from file (around 8MB)
+- writes and index 1 million random string with characters between (100, 1000) to test.db file
+- reads 1 million random elements from file
 - performs read of object at position 2
 - remove object from position 3
 - update object at position 2
