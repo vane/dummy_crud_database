@@ -50,4 +50,4 @@ index fsize :  7.63 MB
 ```
 
 
-So it looks like it can do 1,4k inserts per second and around 26k reads per second on my computer (write time including random choice from 1k elements array).
+So it looks like it can do 28k inserts per second and around 73k reads per second on my computer (write time including random choice from 1k elements array).
